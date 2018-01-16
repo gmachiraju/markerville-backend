@@ -156,15 +156,27 @@ cands_BM = grabCandidates(candidate_extractor_BM, BiomarkerMedium)
 cands_BT = grabCandidates(candidate_extractor_BT, BiomarkerType)
 
 
-# Adjective Boosting - wherever applicable
-print "Number of dev BC candidates without adj. boosting: ", len(dev_cands)
-add_adj_candidate_BC(session, BiomarkerCondition, dev_cands)
-fix_specificity(session, BiomarkerCondition, dev_cands)
+# Adjective Boosting - BC
+print "Number of dev BC candidates without adj. boosting: ", len(cands_BC[1])
+add_adj_candidate_BC(session, BiomarkerCondition, cands_BC[1])
+fix_specificity(session, BiomarkerCondition, cands_BC[1])
 print "Number of dev BC candidates with adj. boosting: ", session.query(BiomarkerCondition).filter(BiomarkerCondition.split == 1).count()
 session.commit()
 
-# add_adj_candidate(session, BiomarkerDrug, dev_cands)
-# session.commit()
+# Adjective Boosting - BD
+print "Number of dev BD candidates without adj. boosting: ", len(cands_BD[1])
+add_adj_candidate_BD(session, BiomarkerDrug, cands_BD[1])
+print "Number of dev BD candidates with adj. boosting: ", session.query(BiomarkerDrug).filter(BiomarkerDrug.split == 1).count()
+session.commit()
+
+# Adjective Boosting - BM
+print "Number of dev BM candidates without adj. boosting: ", len(cands_BM[1])
+add_adj_candidate_BM(session, BiomarkerMedium, dev_cands)
+print "Number of dev BM candidates with adj. boosting: ", session.query(BiomarkerMedium).filter(BiomarkerMedium.split == 1).count()
+session.commit()
+
+# Adjective Boosting - BT (none as of now)
+
 
 #-------------------------------------------
 # External Gold Labels & Labeling Functions
@@ -175,29 +187,40 @@ LFs_BC = [LF_markerDatabase, LF_keyword, LF_distance, LF_abstract_titleWord, LF_
           LF_auxpass, LF_known_abs, LF_same_thing_BC, LF_common_1000, LF_common_2000]
 LFs_BD = [LF_colon, LF_known_abs, LF_single_letter,
           LF_roman_numeral, LF_common_2000, LF_same_thing_BD]
+LFs_BM = [LF_distance_far, LF_colon, LF_known_abs, LF_single_letter, LF_roman_numeral, LF_common_2000, LF_same_thing]
+LFs_BT = [LF_colon, LF_known_abs, LF_single_letter, LF_roman_numeral, LF_common_2000, LF_same_thing]
 
 labeler_BC = LabelAnnotator(lfs=LFs_BC)
 labeler_BD = LabelAnnotator(lfs=LFs_BD)
+labeler_BM = LabelAnnotator(lfs=LFs_BM)
+labeler_BT = LabelAnnotator(lfs=LFs_BT)
 
 
 # Training
 L_train_BC = labeler_BC.apply(split=0)
 L_train_BD = labeler_BD.apply(split=0)
-
-
+L_train_BM = labeler_BM.apply(split=0)
+L_train_BT = labeler_BT.apply(split=0)
 L_train_BC
 L_train_BD
+L_train_BM
+L_train_BT
 
 
 # Labeling Function Performance - Coverage, Overlaps, Conflicts
 L_train_BC.lf_stats(session)
 L_train_BD.lf_stats(session)
+L_train_BM.lf_stats(session)
+L_train_BT.lf_stats(session)
 
 
 # Analyzing Dependencies
-ds_BC = DependencySelector()
-deps = ds.select(L_train, threshold=0.1)
-len(deps)
+Ldeps = []
+for L in [L_train_BC, L_train_BD, L_train_BD, L_train_BD]:
+    ds = DependencySelector()
+    deps = ds.select(L, threshold=0.1)
+    len(deps)
+    Ldeps.append(deps)
 
 
 gen_model = GenerativeModel(lf_propensity=True)

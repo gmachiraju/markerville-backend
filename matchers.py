@@ -79,23 +79,83 @@ for item in all_masses:
     all_concs.append(item + '/L')
     all_concs.append(item + ' per liter')
     
-unitsList = all_lengths + all_areas + all_volumes + \
-    all_lvolumes + all_masses + all_concs   
-#root = os.path.abspath('') + '/'
-# root = '/Users/gmachiraju/Documents/MallickLab/MarkerArk/MarkerArk/'
+unitsList = all_lengths + all_areas + all_volumes + all_lvolumes + all_masses + all_concs   
+
+
+
 
 def getBiomarkerMatcher():
     with open('databases/markerData.pickle', 'rb') as f:
         markerDatabase = pickle.load(f)
-
     marker_dm = DictionaryMatch(d=markerDatabase, ignore_case=False)
     marker_regex = RegexMatchEach(
-        rgx=r'(^|(?<=\s))[A-Za-z][A-Z1-6-]{2,}', ignore_case=False, attrib='words')
+        rgx=r'(^|(?<=\s))(([A-Za-z][A-Z1-9-]{2,})|([A-Z][a-zA-Z-]*[0-9]+))(\s|$)', ignore_case=False, attrib='words')
     matcher = Union(marker_regex, marker_dm)
     return matcher
 
 
-def getUnitsMatcher():
+def getConditionMatcher():
+    with open('databases/diseaseAbbreviationsDatabase.pickle', 'rb') as f:
+        diseaseAbb = pickle.load(f)
+
+    with open('databases/diseaseDatabase.pickle', 'rb') as f:
+        diseaseDictionary = pickle.load(f)
+    
+    with open('databases/expandedDiseaseDatabase.pkl', 'rb') as f:
+        expDisease = pickle.load(f)
+    
+    with open('databases/wikiData.pkl', 'rb') as f:
+        wikiDiseases = pickle.load(f)
+    if('latex' in wikiDiseases):
+        print "ASDF"
+    else:
+        print "ASDFASDF"
+    
+    DiseaseMatch = DictionaryMatch(d=diseaseDictionary, ignore_case=True)
+    AbbMatch = DictionaryMatch(d=diseaseAbb, ignore_case=False)
+    ExpMatch = DictionaryMatch(d=expDisease, ignore_case = True)
+    OwlMatch = DictionaryMatch(d=wikiDiseases, ignore_case = True)
+    temp = Union(DiseaseMatch, AbbMatch)
+    temp2 = Union(ExpMatch, OwlMatch)
+    #return Union(temp, temp2)
+    return OwlMatch
+
+
+def getDrugMatcher():
+    with open('databases/drugDatabase.pickle', 'rb') as f:
+        drugDictionary = pickle.load(f)
+    drug_regex = RegexMatchEach(
+        rgx=r'[\w\-]+(afil|asone|bicin|bital|caine|cillin|cycline|dazole|dipine|dronate|eprazole|fenac|floxacin|gliptin|glitazone|iramine|lamide|mab|mustine|mycin|nacin|nazole|olol|olone|olone|onide|oprazole|parin|phylline|pramine|pril|profen|ridone|sartan|semide|setron|setron|statin|tadine|tadine|terol|thiazide|tinib|trel|tretin|triptan|tyline|vir|vudine|zepam|zodone|zolam|zosin)', ignore_case=True, attrib='words')
+    DrugMatch = DictionaryMatch( d=drugDictionary, ignore_case=False)
+    matcher = Union(drug_regex, DrugMatch)
+    return matcher
+
+
+def getMediumMatcher():
+    with open('databases/mediumDatabase.pickle', 'rb') as f:
+        mediumDatabase = pickle.load(f)
+
+    mediumMatcher = DictionaryMatch(d=mediumDatabase, ignore_case=True)
+    return mediumMatcher
+
+
+def getTypeMatcher():
+    with open('databases/typesDatabase.pickle', 'rb') as f:
+        typeDatabase = pickle.load(f)
+
+    typeMatcher = DictionaryMatch(d=typeDatabase, ignore_case=True)
+    return typeMatcher
+
+
+def getLevelMatcher():
+    #normal_syntax_regex = RegexMatchEach(rgx=r'(?<=[^a-zA-Z:;])[0-9]+[-,\.]?[0-9]+', ignore_case=False, attrib='lemmas')
+   # range_syntax_regex = RegexMatchSpan(normal_syntax_regex, rgx=r'[0-9]+[\W^;]?[0-9]+\s[()][^\sa-zA-Z()]+[()]', ignore_case=False, attrib='text')
+    #(\d+(?:\.\d*)?|\.\d+)
+    levels_regex = RegexMatchEach(rgx=r'((\d+(?:\.\d*)?|\.\d+)+-(\d+(?:\.\d*)?|\.\d+))|(\d+(?:\.\d*)?|\.\d+)', ignore_case=False, attrib='words')
+    return levels_regex  
+
+
+def getUnitMatcher():
     with open('databases/unitsDatabase.pickle', 'rb') as f:
             unitsDatabase = pickle.load(f)
     #units_regex = RegexMatchEach(rgx=r'(?<=\s)[a-zA-Z]{1,2}[1-9]?(?=[\s\,\.])|(?<=\s)[a-zA-Z]{1,2}[1-9]?[\/]{1}[a-zA-Z]{1,2}[1-9]?(?=[\s\.\,])', ignore_case=False, attrib='words')
@@ -104,15 +164,7 @@ def getUnitsMatcher():
     return units_dm #matcher  # unit_regex
 
 
-def getLevelsMatcher():
-    #normal_syntax_regex = RegexMatchEach(rgx=r'(?<=[^a-zA-Z:;])[0-9]+[-,\.]?[0-9]+', ignore_case=False, attrib='lemmas')
-   # range_syntax_regex = RegexMatchSpan(normal_syntax_regex, rgx=r'[0-9]+[\W^;]?[0-9]+\s[()][^\sa-zA-Z()]+[()]', ignore_case=False, attrib='text')
-    #(\d+(?:\.\d*)?|\.\d+)
-    levels_regex = RegexMatchEach(rgx=r'((\d+(?:\.\d*)?|\.\d+)+-(\d+(?:\.\d*)?|\.\d+))|(\d+(?:\.\d*)?|\.\d+)', ignore_case=False, attrib='words')
-    return levels_regex  
-
-
-def getMeasurementTypeMatcher():
+def getMeasurementMatcher():
     noun_regex = RegexMatchEach(
         rgx=r'[A-Z]?NN[A-Z]?', ignore_case=True, attrib='poses')
     complete_obj_regex = RegexMatchSpan(
@@ -127,54 +179,6 @@ def getTestSetMatcher():
     complete_obj_regex = RegexMatchSpan(
         noun_regex, rgx=r'[J]{2,}\sNN[A-Z]?', ignore_case=True, attrib='poses')
     return complete_obj_regex
-
-
-def getDiseaseMatcher():
-    with open('databases/diseaseAbbreviationsDatabase.pickle', 'rb') as f:
-        diseaseAbb = pickle.load(f)
-
-    with open('databases/diseaseDatabase.pickle', 'rb') as f:
-        diseaseDictionary = pickle.load(f)
-    
-    with open('databases/expandedDiseaseDatabase.pkl', 'rb') as f:
-        expDisease = pickle.load(f)
-    
-    with open('databases/wikiData.pkl', 'rb') as f:
-        wikiDiseases = pickle.load(f)
-    
-    
-    DiseaseMatch = DictionaryMatch(d=diseaseDictionary, ignore_case=True)
-    AbbMatch = DictionaryMatch(d=diseaseAbb, ignore_case=False)
-    ExpMatch = DictionaryMatch(d=expDisease, ignore_case = True)
-    OwlMatch = DictionaryMatch(d=wikiDiseases, ignore_case = True)
-    temp = Union(DiseaseMatch, AbbMatch)
-    temp2 = Union(ExpMatch, OwlMatch)
-    return Union(temp, temp2)
-
-
-def getDrugAssociationMatcher():
-    with open('databases/drugDatabase.pickle', 'rb') as f:
-        drugDictionary = pickle.load(f)
-
-    DrugMatch = DictionaryMatch(
-        attrib="Drug", d=drugDictionary, ignore_case=True)
-    return DrugMatch
-
-
-def getMediumMatcher():
-    with open('databases/mediumDatabase.pickle', 'rb') as f:
-        mediumDatabase = pickle.load(f)
-
-    mediumMatcher = DictionaryMatch(d=mediumDatabase, ignore_case=True)
-    return mediumMatcher
-
-
-def getBiomarkerTypeMatcher():
-    with open('databases/typesDatabase.pickle', 'rb') as f:
-        typeDatabase = pickle.load(f)
-
-    typeMatcher = DictionaryMatch(d=typeDatabase, ignore_case=True)
-    return typeMatcher
 
 
 # Utility Functions:

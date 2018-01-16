@@ -171,3 +171,31 @@ def LF_roman_numeral(c):
 def LF_same_thing_BD(c):
     if(c.biomarker.get_span() == c.drug.get_span()):
         return -1
+    
+#------------------------
+# Biomarker-Medium (new)
+#------------------------
+
+def LF_distance_far(c):
+    x=0
+    for thing in get_between_tokens(c):
+        x+=1
+    if x > 10:
+        return -1
+
+def LF_same_thing(c):
+    if(c.biomarker.get_span() == c.medium.get_span()):
+        return -1
+
+
+#------------------------
+# Biomarker-Type (new)
+#------------------------
+
+def LF_same_thing(c):
+    if(c.biomarker.get_span() == c.type.get_span()):
+        return -1
+    
+    
+    
+    
